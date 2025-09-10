@@ -11,6 +11,7 @@ const leadController = {
                 telephone,
                 store_name,
                 store_id,
+                store_location,
                 date_created,
                 lead_source_name,
                 lead_source_id,
@@ -49,6 +50,7 @@ const leadController = {
                     telephone,
                     store_name,
                     store_id,
+                    store_location,
                     date_created: date_created ? new Date(date_created) : new Date(),
                     lead_source_id: leadSourceId
                 })
