@@ -5,19 +5,38 @@ const leadController = {
     async createLead(req, res) {
         try {
             const {
-                name,
+                first_name,
+                last_name,
                 phone,
                 other_phone,
-                telephone,
+                whatsapp,
                 store_name,
                 store_id,
                 store_location,
                 date_created,
                 lead_source_name,
                 lead_source_id,
-                ...notesData
+                notes // This is now a string
             } = req.body;
-
+    
+            // Combine first and last name for the existing 'name' column
+            const name = `${first_name || ''} ${last_name || ''}`.trim();
+    
+            // Process notes - convert to string if array, or keep as string
+            let notesString = '';
+            
+            if (notes) {
+                if (typeof notes === 'string') {
+                    notesString = notes.trim();
+                } else if (Array.isArray(notes)) {
+                    // Convert array to string (comma-separated or any format you prefer)
+                    notesString = notes
+                        .filter(note => typeof note === 'string' && note.trim().length > 0)
+                        .map(note => note.trim())
+                        .join(', '); // or use '\n' for new lines
+                }
+            }
+    
             // First, handle lead source (upsert)
             let leadSourceId = lead_source_id;
             
@@ -30,8 +49,8 @@ const leadController = {
                     )
                     .select()
                     .single();
-
-                if (sourceError && sourceError.code !== '23505') { // Ignore duplicate key errors
+    
+                if (sourceError && sourceError.code !== '23505') {
                     console.error('Lead source error:', sourceError);
                 }
                 
@@ -39,65 +58,43 @@ const leadController = {
                     leadSourceId = sourceData.id;
                 }
             }
-
-            // Insert the main lead
+    
+            // Insert the main lead with notes in the leads table
             const { data: leadData, error: leadError } = await supabase
                 .from('leads')
                 .insert({
                     name,
+                    first_name,
+                    last_name,
                     phone,
                     other_phone,
-                    telephone,
+                    whatsapp,
                     store_name,
                     store_id,
                     store_location,
                     date_created: date_created ? new Date(date_created) : new Date(),
-                    lead_source_id: leadSourceId
+                    lead_source_id: leadSourceId,
+                    notes: notesString // Store notes directly in leads table
                 })
                 .select()
                 .single();
-
+    
             if (leadError) {
                 console.error('Lead insertion error:', leadError);
                 return res.status(400).json({ error: leadError.message });
             }
-
-            // Process notes if they exist
-            if (Object.keys(notesData).length > 0) {
-                const notes = Object.values(notesData).filter(note => 
-                    note && note.notetitle && note.note && note.noteid
-                );
-
-                if (notes.length > 0) {
-                    const notesToInsert = notes.map(note => ({
-                        lead_id: leadData.id,
-                        notetitle: note.notetitle,
-                        note: note.note,
-                        noteid: note.noteid
-                    }));
-
-                    const { error: notesError } = await supabase
-                        .from('lead_notes')
-                        .insert(notesToInsert);
-
-                    if (notesError) {
-                        console.error('Notes insertion error:', notesError);
-                        // We don't return error here since the lead was created successfully
-                    }
-                }
-            }
-
+    
             res.status(201).json({
                 message: 'Lead created successfully',
                 lead: leadData
             });
-
+    
         } catch (error) {
             console.error('Unexpected error:', error);
             res.status(500).json({ error: 'Internal server error' });
         }
     },
-
+    
     // GET - Retrieve leads with optional filtering
     async getLeads(req, res) {
         try {
