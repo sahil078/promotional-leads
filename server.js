@@ -45,7 +45,7 @@ process.on('uncaughtException', (err) => {
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-    process.exit(1); // Exit the process to avoid undefined behavior
+    // Log the error and continue running the server
 });
 
 // Graceful shutdown on SIGINT or SIGTERM

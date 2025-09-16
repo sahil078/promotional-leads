@@ -102,11 +102,7 @@ const leadController = {
             
             let query = supabase
                 .from('leads')
-                .select(`
-                    *,
-                    lead_sources (*),
-                    lead_notes (*)
-                `)
+                .select('*', { count: 'exact' })
                 .order('date_created', { ascending: false });
 
             // Apply filters if provided
@@ -145,33 +141,6 @@ const leadController = {
         }
     },
 
-    // GET - Retrieve a specific lead by ID
-    async getLeadById(req, res) {
-        try {
-            const { id } = req.params;
-
-            const { data: lead, error } = await supabase
-                .from('leads')
-                .select(`
-                    *,
-                    lead_sources (*),
-                    lead_notes (*)
-                `)
-                .eq('id', id)
-                .single();
-
-            if (error) {
-                console.error('Error fetching lead:', error);
-                return res.status(404).json({ error: 'Lead not found' });
-            }
-
-            res.json(lead);
-
-        } catch (error) {
-            console.error('Unexpected error:', error);
-            res.status(500).json({ error: 'Internal server error' });
-        }
-    }
 };
 
 module.exports = leadController;
