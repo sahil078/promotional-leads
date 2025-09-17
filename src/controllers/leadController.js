@@ -141,6 +141,36 @@ const leadController = {
         }
     },
 
+    // GET - Retrieve leads by a specific date
+    async getLeadsByDate(req, res) {
+        try {
+            const { date } = req.params;
+
+            // Validate the date format
+            const parsedDate = new Date(date);
+            if (isNaN(parsedDate.getTime())) {
+                return res.status(400).json({ error: 'Invalid date format. Use YYYY-MM-DD.' });
+            }
+
+            // Query leads for the specific date
+            const { data: leads, error } = await supabase
+                .from('leads')
+                .select('*')
+                .eq('date_created', parsedDate.toISOString().split('T')[0]);
+
+            if (error) {
+                console.error('Error fetching leads by date:', error);
+                return res.status(400).json({ error: error.message });
+            }
+
+            res.json({ leads });
+
+        } catch (error) {
+            console.error('Unexpected error:', error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    },
+
 };
 
 module.exports = leadController;
